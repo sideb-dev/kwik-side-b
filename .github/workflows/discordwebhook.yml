@@ -1,0 +1,20 @@
+name: Discord Webhook
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord message
+        uses: tsickert/discord-webhook@v7.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          content: |
+            New push to **${{ github.repository }}**
+
+            User: ${{ github.actor }}
+            Commit: ${{ github.event.head_commit.message }}
+            https://github.com/${{ github.repository }}/commit/${{ github.sha }}
