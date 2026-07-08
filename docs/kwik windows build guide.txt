@@ -38,7 +38,7 @@ clone kwik (maybe next to the glfw-3.4 folder)
 cd ../../kwik/build
 
 cmake .. -A x64 -Dglfw3_DIR=C:\Libraries\glfw\lib\cmake\glfw3 -DZ_LIB=C:/Libraries/zlib/lib/zlib.lib -DBZ2_LIB=C:/Libraries/bzip2/lib/bz2.lib ..
-cmake --build . --parallel
+cmake --build . --config Debug --parallels
 
 and then copy bz2-1.dll, z.dll to build\compiler\Debug (or release)
 

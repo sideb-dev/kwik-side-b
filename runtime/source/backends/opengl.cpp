@@ -330,6 +330,8 @@ bool render_init(const char* title, int width, int height, unsigned int bg_color
         return false;
     }
 
+    render_center_window();
+
     glfwSetScrollCallback(g_window, [](GLFWwindow*, double, double dy) { g_wheel_accum += dy; });
     glfwMakeContextCurrent(g_window);
     glfwSwapInterval(1);
