@@ -24,6 +24,8 @@ int render_gui_height();
 void render_set_window_size(int width, int height);
 void render_set_fullscreen(bool fs);
 bool render_get_fullscreen();
+void render_set_borderless(bool on);
+bool render_get_borderless();
 void render_center_window();
 int render_window_width();
 int render_window_height();

@@ -454,7 +454,12 @@ GMLFN(window_set_fullscreen) {
     return Value();
 }
 GMLFN(window_get_fullscreen) { (void)self; (void)args; (void)argc; return Value(render_get_fullscreen()); }
-GMLFN(window_enable_borderless_fullscreen) { (void)self; (void)args; (void)argc; return Value(); }
+GMLFN(window_enable_borderless_fullscreen) {
+    (void)self;
+    render_set_borderless(argc > 0 && gml_truthy(args[0]));
+    return Value();
+}
+GMLFN(window_get_borderless) { (void)self; (void)args; (void)argc; return Value(render_get_borderless()); }
 GMLFN(window_set_caption) {
     (void)self;
     if (argc > 0) render_set_title(((std::string)args[0]).c_str());

@@ -466,7 +466,8 @@ GMLFN(view_get_xport); GMLFN(view_get_yport); GMLFN(view_set_camera); GMLFN(view
 GMLFN(view_set_surface_id); GMLFN(view_set_visible); GMLFN(view_set_wport); GMLFN(view_set_xport);
 GMLFN(view_set_yport);
 
-GMLFN(window_center); GMLFN(window_enable_borderless_fullscreen); GMLFN(window_get_fullscreen);
+GMLFN(window_center); GMLFN(window_enable_borderless_fullscreen); GMLFN(window_get_borderless);
+GMLFN(window_get_fullscreen);
 GMLFN(window_get_height); GMLFN(window_get_width); GMLFN(window_set_caption);
 GMLFN(window_set_cursor); GMLFN(window_set_fullscreen); GMLFN(window_set_size);
 GMLFN(display_get_width); GMLFN(display_get_height); GMLFN(display_get_gui_width);

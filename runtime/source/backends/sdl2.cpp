@@ -24,6 +24,9 @@ static bool g_fog_on = false;
 static unsigned char g_fog_col[3] = {0, 0, 0};
 static bool g_fullscreen = false;
 static int g_saved_x = 100, g_saved_y = 100, g_saved_w = 640, g_saved_h = 480;
+static bool g_borderless = true;
+static int g_borderless_saved_x = 100, g_borderless_saved_y = 100, g_borderless_saved_w = 640,
+           g_borderless_saved_h = 480;
 
 static unsigned int g_color_bgr = 0xFFFFFF;
 static float g_alpha = 1.0f;
@@ -624,7 +627,7 @@ bool render_init(const char* title, int width, int height, unsigned int bg_color
     }
 
     g_window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width,
-                                height, SDL_WINDOW_RESIZABLE);
+                                height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS);
     if (!g_window) {
         std::fprintf(stderr, "kwik: window creation failed: %s\n", SDL_GetError());
         SDL_Quit();
@@ -910,6 +913,29 @@ void render_set_fullscreen(bool fs) {
 }
 
 bool render_get_fullscreen() { return g_fullscreen; }
+
+void render_set_borderless(bool on) {
+    if (!g_window || on == g_borderless || g_fullscreen) return;
+    if (on) {
+        SDL_GetWindowPosition(g_window, &g_borderless_saved_x, &g_borderless_saved_y);
+        SDL_GetWindowSize(g_window, &g_borderless_saved_w, &g_borderless_saved_h);
+        SDL_DisplayMode mode;
+        int display = SDL_GetWindowDisplayIndex(g_window);
+        SDL_GetDesktopDisplayMode(display, &mode);
+        SDL_Rect bounds;
+        SDL_GetDisplayBounds(display, &bounds);
+        SDL_SetWindowBordered(g_window, SDL_FALSE);
+        SDL_SetWindowSize(g_window, mode.w, mode.h);
+        SDL_SetWindowPosition(g_window, bounds.x, bounds.y);
+    } else {
+        SDL_SetWindowBordered(g_window, SDL_TRUE);
+        SDL_SetWindowSize(g_window, g_borderless_saved_w, g_borderless_saved_h);
+        SDL_SetWindowPosition(g_window, g_borderless_saved_x, g_borderless_saved_y);
+    }
+    g_borderless = on;
+}
+
+bool render_get_borderless() { return g_borderless; }
 
 void render_center_window() {
     if (!g_window || g_fullscreen) return;

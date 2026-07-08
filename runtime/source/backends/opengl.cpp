@@ -22,6 +22,9 @@ static bool g_fog_on = false;
 static float g_fog_rgb[4] = {0, 0, 0, 1};
 static bool g_fullscreen = false;
 static int g_saved_x = 100, g_saved_y = 100, g_saved_w = 640, g_saved_h = 480;
+static bool g_borderless = true;
+static int g_borderless_saved_x = 100, g_borderless_saved_y = 100, g_borderless_saved_w = 640,
+           g_borderless_saved_h = 480;
 
 static float g_color_r = 1.0f, g_color_g = 1.0f, g_color_b = 1.0f;
 static unsigned int g_color_bgr = 0xFFFFFF;
@@ -311,11 +314,15 @@ static bool key_state(int vk) {
 }
 
 bool render_init(const char* title, int width, int height, unsigned int bg_color) {
+#if defined(__linux__) && !defined(__APPLE__)
+    glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+#endif
     if (!glfwInit()) {
         std::fprintf(stderr, "kwik: glfwInit failed\n");
         return false;
     }
 
+    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
     g_window = glfwCreateWindow(width, height, title, nullptr, nullptr);
     if (!g_window) {
         std::fprintf(stderr, "kwik: window creation failed\n");
@@ -804,6 +811,27 @@ void render_set_fullscreen(bool fs) {
 }
 
 bool render_get_fullscreen() { return g_fullscreen; }
+
+void render_set_borderless(bool on) {
+    if (!g_window || on == g_borderless || g_fullscreen) return;
+    if (on) {
+        glfwGetWindowPos(g_window, &g_borderless_saved_x, &g_borderless_saved_y);
+        glfwGetWindowSize(g_window, &g_borderless_saved_w, &g_borderless_saved_h);
+        GLFWmonitor* mon = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode = glfwGetVideoMode(mon);
+        int mx = 0, my = 0;
+        glfwGetMonitorPos(mon, &mx, &my);
+        glfwSetWindowAttrib(g_window, GLFW_DECORATED, GLFW_FALSE);
+        glfwSetWindowMonitor(g_window, nullptr, mx, my, mode->width, mode->height, 0);
+    } else {
+        glfwSetWindowMonitor(g_window, nullptr, g_borderless_saved_x, g_borderless_saved_y,
+                             g_borderless_saved_w, g_borderless_saved_h, 0);
+        glfwSetWindowAttrib(g_window, GLFW_DECORATED, GLFW_TRUE);
+    }
+    g_borderless = on;
+}
+
+bool render_get_borderless() { return g_borderless; }
 
 void render_center_window() {
     if (!g_window || g_fullscreen) return;
