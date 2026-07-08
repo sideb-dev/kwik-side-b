@@ -809,11 +809,32 @@ static void inst_set_raw(Instance* inst, const char* name, const Value& v) {
     inst->var(name) = v;
 }
 
+static std::unordered_map<std::string, ScriptFn>& override_registry() {
+    static std::unordered_map<std::string, ScriptFn> m;
+    return m;
+}
+
+ScriptFn kwik_get_override(const char* name) {
+    auto it = override_registry().find(name);
+    return it != override_registry().end() ? it->second : nullptr;
+}
+
+void kwik_register_override(const char* name, ScriptFn fn) { override_registry()[name] = fn; }
+
+static GlobalOverrideFn g_global_override = nullptr;
+void kwik_set_global_override(GlobalOverrideFn fn) { g_global_override = fn; }
+
 Value kwik_scope_get(Instance* self, int spec, const char* name) {
     switch (spec) {
         case -1: case -9: return self ? inst_get_raw(self, name) : Value();
         case -2: return g_other_ptr ? inst_get_raw(g_other_ptr, name) : Value();
-        case -5: return global_var(name);
+        case -5: {
+            if (g_global_override) {
+                Value ov;
+                if (g_global_override(name, ov)) return ov;
+            }
+            return global_var(name);
+        }
         case -6: return kwik_builtin_get(self, name);
         default: {
             if (spec >= 0) {
@@ -844,7 +865,13 @@ void kwik_scope_set(Instance* self, int spec, const char* name, const Value& v) 
 Value kwik_inst_get(Instance* self, const Value& who, const char* name) {
     if (who.type == Value::OBJ && who.obj) return inst_get_raw(who.obj.get(), name);
     int w = (int)(double)who;
-    if (w == -5) return global_var(name);
+    if (w == -5) {
+        if (g_global_override) {
+            Value ov;
+            if (g_global_override(name, ov)) return ov;
+        }
+        return global_var(name);
+    }
     if (w == -6) return kwik_builtin_get(self, name);
     Instance* t = kwik_resolve_target(self, who);
     return t ? inst_get_raw(t, name) : Value();

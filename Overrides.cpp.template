@@ -1,0 +1,61 @@
+/*
+ *
+ * LIL WALK DOWN ON HOW THIS WORKS!
+ *
+ * YOU CAN DO SUMN LIKE DIS:
+ * static bool debug_override(const char* name, Value& out) {
+ *   if (!std::strcmp(name, "debug")) { out = Value(1.0); return true; }
+ *       return false;
+ *   }
+ *
+ * TO OVERRIDE A GLOBAL VAR, IN THIS CASE IT'D BE global.debug!
+ * 1 = true, 0 = false ya know the jist!
+ *
+ * THIS:
+ *
+ * namespace {
+ *   struct InstallGlobalOverride {
+ *       InstallGlobalOverride() {
+ *           kwik_set_global_override(&debug_override);
+ *       }
+ *   }
+ *   g_install_global_override;
+ * }
+ *
+ * MAKES THE OVERRIDE PROPERLY WORK!
+ *
+ * YOU CAN DO SOMETHING THIS:
+ *
+ * static Value open_term_insteadlmfao(Instance* self, const Value* args, int argc)
+ * {
+ *    (void)self;
+ *    (void)args;
+ *    (void)argc;
+ *    static bool lastEnter = false;
+ *    bool enter = (int)(double)kwik_scope_get(self, -6, "keyboard_key") == 13;
+ *
+ *    if (enter && !lastEnter)
+ *    {
+ *        #ifdef _WIN32
+ *        system("start cmd");
+ *        #elif __linux__
+ *        system("konsole &");
+ *        #endif
+ *    }
+ *
+ *    lastEnter = enter;
+ *
+ *    return Value();
+ * }
+ *
+ * KWIK_OVERRIDE(gml_Object_obj_warning_Step_0, open_term_insteadlmfao);
+ *
+ * TO OVERRIDE A FUNCTION/EVENT WITH YOUR OWN CODE!
+ * IN THIS CASE IT OVERRIDES MY STEP EVENT IN OBJ_WARNING!
+ *
+ */
+
+#include "generated.h"
+#include <cstring>
+
+using namespace gml;

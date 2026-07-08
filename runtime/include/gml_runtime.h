@@ -266,6 +266,12 @@ Value gml_gt(const Value& a, const Value& b);
 bool gml_truthy(const Value& a);
 
 Value& global_var(const std::string& name);
+
+ScriptFn kwik_get_override(const char* name);
+void kwik_register_override(const char* name, ScriptFn fn);
+using GlobalOverrideFn = bool (*)(const char* name, Value& out);
+void kwik_set_global_override(GlobalOverrideFn fn);
+
 Value kwik_scope_get(Instance* self, int spec, const char* name);
 void kwik_scope_set(Instance* self, int spec, const char* name, const Value& v);
 Value kwik_inst_get(Instance* self, const Value& who, const char* name);
@@ -819,3 +825,10 @@ GMLFN(video_resume);
 GMLFN(video_seek_to);
 GMLFN(video_set_volume);
 }
+
+#define KWIK_OVERRIDE(gen_name, fn)                                                       \
+    namespace {                                                                           \
+    struct KwikOverrideInstaller_##gen_name {                                             \
+        KwikOverrideInstaller_##gen_name() { gml::kwik_register_override(#gen_name, fn); } \
+    } kwik_override_installer_##gen_name;                                                 \
+    }

@@ -946,7 +946,10 @@ static void assign_event(const GameData& gd, const std::string& code_name,
 }
 
 static void emit_function(std::ostream& os, const GameData& gd, const CodeEntry& e) {
-    os << "Value " << sanitize(e.name) << "(Instance* self, const Value* args, int argc) {\n";
+    std::string nm = sanitize(e.name);
+    os << "Value " << nm << "(Instance* self, const Value* args, int argc) {\n";
+    os << "    static ScriptFn __ov = kwik_get_override(\"" << nm << "\");\n";
+    os << "    if (__ov) return __ov(self, args, argc);\n";
     os << lift_code_entry(gd, e);
     os << "}\n\n";
 }
@@ -1111,9 +1114,25 @@ bool emit_dir(const GameData& gd, const std::string& out_dir) {
     fs::create_directories(root / "rooms", ec);
     fs::create_directories(root / "scripts", ec);
 
+    fs::path overrides_path = root / "overrides.cpp";
+    if (!fs::exists(overrides_path)) {
+#ifdef KWIK_SOURCE_ROOT
+        const char* kwik_root_ov = KWIK_SOURCE_ROOT;
+#else
+        const char* kwik_root_ov = "";
+#endif
+        std::ifstream tmpl_in(std::string(kwik_root_ov) + "/Overrides.cpp.template", std::ios::binary);
+        if (!tmpl_in) {
+            std::fprintf(stderr, "kwik: could not open %s/Overrides.cpp.template\n", kwik_root_ov);
+            return false;
+        }
+        std::ofstream ov(overrides_path, std::ios::binary);
+        ov << tmpl_in.rdbuf();
+    }
+
     std::ofstream hdr(root / "generated.h", std::ios::binary);
     if (!hdr) return false;
-    hdr << "#pragma once\n#include \"gml_runtime.h\"\n#include <cmath>\n\nusing gml::Value;\nusing gml::Instance;\n\n";
+    hdr << "#pragma once\n#include \"gml_runtime.h\"\n#include <cmath>\n\nusing gml::Value;\nusing gml::Instance;\nusing gml::ScriptFn;\n\n";
     for (const auto& e : gd.code())
         hdr << "Value " << sanitize(e.name)
             << "(Instance* self, const Value* args, int argc);\n";
