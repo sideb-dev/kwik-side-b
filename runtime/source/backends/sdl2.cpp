@@ -783,6 +783,11 @@ bool render_key_released(int vk) {
     if (vk < 0 || vk >= 512) return false;
     return !g_keys_now[vk] && g_keys_prev[vk];
 }
+int render_last_key() {
+    for (int i = 2; i < 512; ++i)
+        if (g_keys_now[i]) return i;
+    return 0;
+}
 void render_keyboard_clear(int vk) {
     if (vk < 0) {
         for (int i = 0; i < 512; ++i) g_keys_now[i] = g_keys_prev[i] = false;

@@ -33,6 +33,7 @@ int render_display_height();
 bool render_key_down(int gml_vk);
 bool render_key_pressed(int gml_vk);
 bool render_key_released(int gml_vk);
+int render_last_key();
 double render_mouse_x();
 double render_mouse_y();
 bool render_mouse_down(int button);

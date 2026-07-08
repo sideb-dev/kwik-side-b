@@ -199,6 +199,7 @@ static void sync_from_polar(Instance* i) {
 }
 
 int g_async_load_map = -1;
+static int g_keyboard_lastkey = 0;
 static std::vector<std::pair<int, int>> g_async_queue;
 
 void kwik_queue_async(int kind, int map_id) { g_async_queue.push_back({kind, map_id}); }
@@ -1071,6 +1072,12 @@ Value kwik_builtin_get(Instance* self, const char* name) {
     if (!std::strcmp(name, "program_directory")) return Value(g_game_dir + "/");
     if (!std::strcmp(name, "view_current")) return Value(0.0);
     if (!std::strcmp(name, "keyboard_string")) return Value("");
+    if (!std::strcmp(name, "keyboard_key")) return Value((double)render_last_key());
+    if (!std::strcmp(name, "keyboard_lastkey")) {
+        int k = render_last_key();
+        if (k != 0) g_keyboard_lastkey = k;
+        return Value((double)g_keyboard_lastkey);
+    }
     if (!std::strcmp(name, "game_save_id"))
         return Value(g_save_dir.empty() ? g_game_dir + "/" : g_save_dir + "/");
     if (!std::strcmp(name, "argument_count")) return Value(0.0);
@@ -1110,6 +1117,11 @@ void kwik_builtin_set(Instance* self, const char* name, const Value& v) {
     if (!std::strcmp(name, "room_speed")) { g_room_speed_v = (double)v; return; }
     if (!std::strcmp(name, "room")) { kwik_room_goto((int)(double)v); return; }
     if (!std::strcmp(name, "keyboard_string")) return;
+    if (!std::strcmp(name, "keyboard_key")) {
+        if ((int)(double)v == 0) render_keyboard_clear(-1);
+        return;
+    }
+    if (!std::strcmp(name, "keyboard_lastkey")) { g_keyboard_lastkey = (int)(double)v; return; }
     if (!std::strcmp(name, "debug_mode")) { global_var("debug") = v; return; }
     if (self && !std::strcmp(name, "path_index")) {
         int pth = (int)(double)v;
