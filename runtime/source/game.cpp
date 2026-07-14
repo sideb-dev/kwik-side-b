@@ -2989,18 +2989,20 @@ static void run_step_phase() {
             int guard = 0;
             while (obj >= 0 && obj < g_object_count_rt && guard++ < 128) {
                 const ObjectDef& od = g_objects_rt[obj];
-                for (int k = 0; k < od.keypress_count; ++k)
-                    if (render_key_pressed(od.keypress[k].key))
-                        call_event(inst, EVK_STEP, 0, od.keypress[k].fn, obj);
-                if (inst->dead) break;
-                for (int k = 0; k < od.keyrelease_count; ++k)
-                    if (render_key_released(od.keyrelease[k].key))
-                        call_event(inst, EVK_STEP, 0, od.keyrelease[k].fn, obj);
-                if (inst->dead) break;
-                for (int k = 0; k < od.keyboard_count; ++k)
-                    if (render_key_down(od.keyboard[k].key))
-                        call_event(inst, EVK_STEP, 0, od.keyboard[k].fn, obj);
-                if (inst->dead) break;
+                if (!g_console_open) {
+                    for (int k = 0; k < od.keypress_count; ++k)
+                        if (render_key_pressed(od.keypress[k].key))
+                            call_event(inst, EVK_STEP, 0, od.keypress[k].fn, obj);
+                    if (inst->dead) break;
+                    for (int k = 0; k < od.keyrelease_count; ++k)
+                        if (render_key_released(od.keyrelease[k].key))
+                            call_event(inst, EVK_STEP, 0, od.keyrelease[k].fn, obj);
+                    if (inst->dead) break;
+                    for (int k = 0; k < od.keyboard_count; ++k)
+                        if (render_key_down(od.keyboard[k].key))
+                            call_event(inst, EVK_STEP, 0, od.keyboard[k].fn, obj);
+                    if (inst->dead) break;
+                }
                 if (od.mouse_count > 0) {
                     double l, t, r, b;
                     bool over = inst_bbox(inst, inst->x, inst->y, l, t, r, b) && mx >= l &&
@@ -3268,10 +3270,12 @@ restart_game:
             continue;
         }
         double t = now_ms() / 1000.0;
-        accumulator += t - last_t;
+        accumulator += (t - last_t) * g_timescale;
         last_t = t;
         if (accumulator > 0.2) accumulator = 0.2;
         step_time = 1.0 / std::max(1.0, g_room_speed_v);
+
+        console_update();
 
         int guard = 0;
         bool stepped = false;
@@ -3290,9 +3294,10 @@ restart_game:
             step_time = 1.0 / std::max(1.0, g_room_speed_v);
         }
 
-        if (stepped) {
+        if (stepped || g_console_open) {
             render_begin_frame();
             draw_world();
+            console_draw();
             render_end_frame();
         } else {
             render_idle();

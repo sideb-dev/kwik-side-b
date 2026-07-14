@@ -35,12 +35,14 @@ static bool autoz_pressed(int vk) {
 
 GMLFN(keyboard_check) {
     (void)self;
+    if (g_console_open) return Value(false);
     int vk = (int)A(args, argc, 0);
     if (autoz_down(vk)) return Value(1.0);
     return Value(render_key_down(vk));
 }
 GMLFN(keyboard_check_pressed) {
     (void)self;
+    if (g_console_open) return Value(false);
     int vk = (int)A(args, argc, 0);
     if (autoz_pressed(vk)) return Value(1.0);
     if (vk == 1) {
@@ -52,6 +54,7 @@ GMLFN(keyboard_check_pressed) {
 }
 GMLFN(keyboard_check_released) {
     (void)self;
+    if (g_console_open) return Value(false);
     return Value(render_key_released((int)A(args, argc, 0)));
 }
 GMLFN(keyboard_key_press) { (void)self; (void)args; (void)argc; return Value(); }

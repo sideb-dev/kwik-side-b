@@ -22,7 +22,8 @@ static bool g_fog_on = false;
 static float g_fog_rgb[4] = {0, 0, 0, 1};
 static bool g_fullscreen = false;
 static int g_saved_x = 100, g_saved_y = 100, g_saved_w = 640, g_saved_h = 480;
-static bool g_borderless = true;
+
+static bool g_borderless = false;
 static int g_borderless_saved_x = 100, g_borderless_saved_y = 100, g_borderless_saved_w = 640,
            g_borderless_saved_h = 480;
 
@@ -304,6 +305,9 @@ static bool key_state(int vk) {
         case 35: return glfwGetKey(g_window, GLFW_KEY_END) == GLFW_PRESS;
         case 33: return glfwGetKey(g_window, GLFW_KEY_PAGE_UP) == GLFW_PRESS;
         case 34: return glfwGetKey(g_window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS;
+        case 189: return glfwGetKey(g_window, GLFW_KEY_MINUS) == GLFW_PRESS;
+        case 190: return glfwGetKey(g_window, GLFW_KEY_PERIOD) == GLFW_PRESS;
+        case 192: return glfwGetKey(g_window, GLFW_KEY_GRAVE_ACCENT) == GLFW_PRESS;
         default:
             if (vk >= 'A' && vk <= 'Z') return glfwGetKey(g_window, GLFW_KEY_A + (vk - 'A')) == GLFW_PRESS;
             if (vk >= '0' && vk <= '9') return glfwGetKey(g_window, GLFW_KEY_0 + (vk - '0')) == GLFW_PRESS;
@@ -815,6 +819,8 @@ void render_set_fullscreen(bool fs) {
 bool render_get_fullscreen() { return g_fullscreen; }
 
 void render_set_borderless(bool on) {
+    std::fprintf(stderr, "[render] render_set_borderless(%d) g_window=%p g_borderless=%d g_fullscreen=%d\n",
+                 (int)on, (void*)g_window, (int)g_borderless, (int)g_fullscreen);
     if (!g_window || on == g_borderless || g_fullscreen) return;
     if (on) {
         glfwGetWindowPos(g_window, &g_borderless_saved_x, &g_borderless_saved_y);

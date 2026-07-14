@@ -24,7 +24,8 @@ static bool g_fog_on = false;
 static unsigned char g_fog_col[3] = {0, 0, 0};
 static bool g_fullscreen = false;
 static int g_saved_x = 100, g_saved_y = 100, g_saved_w = 640, g_saved_h = 480;
-static bool g_borderless = true;
+
+static bool g_borderless = false;
 static int g_borderless_saved_x = 100, g_borderless_saved_y = 100, g_borderless_saved_w = 640,
            g_borderless_saved_h = 480;
 
@@ -609,6 +610,9 @@ static bool key_state(int vk) {
         case 35: return ks[SDL_SCANCODE_END];
         case 33: return ks[SDL_SCANCODE_PAGEUP];
         case 34: return ks[SDL_SCANCODE_PAGEDOWN];
+        case 189: return ks[SDL_SCANCODE_MINUS];
+        case 190: return ks[SDL_SCANCODE_PERIOD];
+        case 192: return ks[SDL_SCANCODE_GRAVE];
         default:
             if (vk >= 'A' && vk <= 'Z') return ks[SDL_SCANCODE_A + (vk - 'A')];
             if (vk == '0') return ks[SDL_SCANCODE_0];

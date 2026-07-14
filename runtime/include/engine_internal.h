@@ -29,6 +29,11 @@ extern bool g_game_end_requested;
 extern bool g_game_restart_requested;
 extern unsigned long long g_frame_counter;
 
+extern bool g_console_open;
+extern double g_timescale;
+void console_update();
+void console_draw();
+
 double gml_random01();
 void gml_random_seed(unsigned int seed);
 

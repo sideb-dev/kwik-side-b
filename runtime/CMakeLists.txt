@@ -19,6 +19,8 @@ endif()
 add_library(kwik_runtime STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/source/value.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/game.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/console.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/vcr_ttf_data.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/builtins_core.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/builtins_data.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/builtins_draw.cpp
