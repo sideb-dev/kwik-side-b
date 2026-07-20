@@ -58,6 +58,7 @@ struct Instance : std::enable_shared_from_this<Instance> {
     double depth = 0.0;
     double m_speed = 0.0, m_dir = 0.0, m_hs = 0.0, m_vs = 0.0;
     std::unordered_map<std::string, Value> vars;
+    long long coll_query_stamp = -1;
 
     Value& var(const std::string& n) { return vars[n]; }
     bool has(const std::string& n) const { return vars.count(n) != 0; }

@@ -412,10 +412,70 @@ static bool boxes_overlap(double al, double at, double ar, double ab,
     return al < br && ar > bl && at < bb && ab > bt;
 }
 
+namespace {
+constexpr double kCollCellSize = 128.0;
+struct CollGrid {
+    std::unordered_map<long long, std::vector<Instance*>> cells;
+    unsigned long long built_frame = (unsigned long long)-1;
+};
+CollGrid g_coll_grid;
+long long g_coll_query_id = 0;
+
+inline long long coll_cell_key(int cx, int cy) {
+    return (static_cast<long long>(cx) << 32) ^ static_cast<unsigned int>(cy);
+}
+
+inline void coll_cell_range(double l, double t, double r, double b, int& cx0, int& cx1, int& cy0,
+                            int& cy1) {
+    cx0 = (int)std::floor(l / kCollCellSize);
+    cx1 = (int)std::floor(r / kCollCellSize);
+    cy0 = (int)std::floor(t / kCollCellSize);
+    cy1 = (int)std::floor(b / kCollCellSize);
+}
+
+void ensure_coll_grid() {
+    if (g_coll_grid.built_frame == g_frame_counter) return;
+    g_coll_grid.built_frame = g_frame_counter;
+    g_coll_grid.cells.clear();
+    for (auto& sp : g_instances) {
+        Instance* inst = sp.get();
+        if (inst->dead || !inst->active || inst->is_struct) continue;
+        double l, t, r, b;
+        if (!inst_bbox(inst, inst->x, inst->y, l, t, r, b)) continue;
+        int cx0, cx1, cy0, cy1;
+        coll_cell_range(l, t, r, b, cx0, cx1, cy0, cy1);
+        for (int cy = cy0; cy <= cy1; ++cy)
+            for (int cx = cx0; cx <= cx1; ++cx)
+                g_coll_grid.cells[coll_cell_key(cx, cy)].push_back(inst);
+    }
+}
+
+void coll_query(double l, double t, double r, double b, std::vector<Instance*>& out) {
+    ensure_coll_grid();
+    ++g_coll_query_id;
+    int cx0, cx1, cy0, cy1;
+    coll_cell_range(l, t, r, b, cx0, cx1, cy0, cy1);
+    for (int cy = cy0; cy <= cy1; ++cy) {
+        for (int cx = cx0; cx <= cx1; ++cx) {
+            auto it = g_coll_grid.cells.find(coll_cell_key(cx, cy));
+            if (it == g_coll_grid.cells.end()) continue;
+            for (Instance* inst : it->second) {
+                if (inst->coll_query_stamp == g_coll_query_id) continue;
+                inst->coll_query_stamp = g_coll_query_id;
+                out.push_back(inst);
+            }
+        }
+    }
+}
+}  // namespace
+
 Instance* collision_at(Instance* self, double px, double py, int who, bool) {
     if (!self) return nullptr;
-    for (auto& sp : g_instances) {
-        Instance* other = sp.get();
+    double l, t, r, b;
+    if (!inst_bbox(self, px, py, l, t, r, b)) return nullptr;
+    std::vector<Instance*> candidates;
+    coll_query(l, t, r, b, candidates);
+    for (Instance* other : candidates) {
         if (other == self || !inst_matches(other, who)) continue;
         if (instances_hit(self, px, py, other)) return other;
     }
@@ -423,8 +483,9 @@ Instance* collision_at(Instance* self, double px, double py, int who, bool) {
 }
 
 static Instance* collision_point_at(Instance* self, double px, double py, int who) {
-    for (auto& sp : g_instances) {
-        Instance* other = sp.get();
+    std::vector<Instance*> candidates;
+    coll_query(px, py, px, py, candidates);
+    for (Instance* other : candidates) {
         if (other == self || !inst_matches(other, who)) continue;
         if (inst_masks(other)) {
             if (point_in_instance(other, other->x, other->y, px, py)) return other;
@@ -446,8 +507,9 @@ static Instance* collision_rect_at(Instance* self, double x1, double y1, double 
     a.x = 0;
     a.y = 0;
     a.valid = true;
-    for (auto& sp : g_instances) {
-        Instance* other = sp.get();
+    std::vector<Instance*> candidates;
+    coll_query(a.lx0, a.ly0, a.lx1, a.ly1, candidates);
+    for (Instance* other : candidates) {
         if (other == self || !inst_matches(other, who)) continue;
         KBox b = make_box(other, other->x, other->y);
         if (boxes_hit(a, b)) return other;
@@ -3261,6 +3323,9 @@ restart_game:
     double last_t = now_ms() / 1000.0;
     static const bool ignore_focus =
         std::getenv("KWIK_AUTOZ") != nullptr || std::getenv("KWIK_NOFOCUS_PAUSE") != nullptr;
+    static const bool dbg_profile = std::getenv("KWIK_DEBUG_PROFILE") != nullptr;
+    static double prof_step_ms = 0.0, prof_draw_ms = 0.0, prof_present_ms = 0.0;
+    static int prof_frames = 0;
     while (!render_should_close() && !g_game_end_requested) {
         if (!ignore_focus && !render_has_focus()) {
             render_present_last();
@@ -3281,7 +3346,9 @@ restart_game:
         bool stepped = false;
         while (accumulator >= step_time && guard++ < 4) {
             accumulator -= step_time;
+            double prof_t0 = dbg_profile ? now_ms() : 0.0;
             run_step_phase();
+            if (dbg_profile) prof_step_ms += now_ms() - prof_t0;
             stepped = true;
             kwik_audio_update();
             if (g_game_restart_requested) goto restart_game;
@@ -3296,9 +3363,24 @@ restart_game:
 
         if (stepped || g_console_open) {
             render_begin_frame();
+            double prof_t0 = dbg_profile ? now_ms() : 0.0;
             draw_world();
             console_draw();
+            double prof_t1 = dbg_profile ? now_ms() : 0.0;
             render_end_frame();
+            if (dbg_profile) {
+                prof_draw_ms += prof_t1 - prof_t0;
+                prof_present_ms += now_ms() - prof_t1;
+                if (++prof_frames >= 60) {
+                    std::fprintf(stderr,
+                                 "[profile] step=%.2fms draw=%.2fms present=%.2fms (avg/frame, "
+                                 "last %d frames)\n",
+                                 prof_step_ms / prof_frames, prof_draw_ms / prof_frames,
+                                 prof_present_ms / prof_frames, prof_frames);
+                    prof_step_ms = prof_draw_ms = prof_present_ms = 0.0;
+                    prof_frames = 0;
+                }
+            }
         } else {
             render_idle();
             double wait_s = step_time - accumulator;
