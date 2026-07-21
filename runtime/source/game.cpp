@@ -2828,8 +2828,7 @@ static void draw_world() {
     std::sort(items.begin(), items.end(), [](const DrawItem& a, const DrawItem& b) {
         if (a.depth != b.depth) return a.depth > b.depth;
         if (a.type != b.type) return a.type < b.type;
-        if (a.type == 0) return a.order < b.order;
-        return a.order > b.order;
+        return a.order < b.order;
     });
 
     for (auto& sp : g_instances) {
@@ -2917,7 +2916,7 @@ static void draw_world() {
         }
         std::sort(gitems.begin(), gitems.end(), [](const DrawItem& a, const DrawItem& b) {
             if (a.depth != b.depth) return a.depth > b.depth;
-            return a.order > b.order;
+            return a.order < b.order;
         });
         for (const DrawItem& it : gitems) {
             if (it.inst->dead) continue;

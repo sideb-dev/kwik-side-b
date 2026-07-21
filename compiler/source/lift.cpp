@@ -608,6 +608,8 @@ static void exec_instr(LiftCtx& ctx, size_t i, StackState& st, std::ostream* out
                     *out << "    " << S(base) << " = " << S(d() - 1) << ";\n";
             } else if (fn == "@@NullObject@@") {
                 if (out) *out << "    " << S(base) << " = Value(-4.0);\n";
+            } else if (fn == "@@Global@@") {
+                if (out) *out << "    " << S(base) << " = Value(-5.0);\n";
             } else if (fn == "@@try_hook@@" || fn == "@@try_unhook@@" ||
                        fn == "@@throw@@" || fn == "@@finish_catch@@" ||
                        fn == "@@finish_finally@@") {
