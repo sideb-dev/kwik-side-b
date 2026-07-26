@@ -10,9 +10,18 @@ if(KWIK_BACKEND STREQUAL "sdl2")
 else()
     find_package(OpenGL REQUIRED)
     find_package(glfw3 REQUIRED)
+    set(KWIK_RVM_FLASH_DIR ${KWIK_THIRD_PARTY}/rvm_flash)
     set(KWIK_BACKEND_SOURCE
         ${CMAKE_CURRENT_SOURCE_DIR}/source/backends/opengl.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/builtins_flash.cpp
         ${KWIK_THIRD_PARTY}/glad/src/glad.c
+        ${KWIK_RVM_FLASH_DIR}/src/swf.cpp
+        ${KWIK_RVM_FLASH_DIR}/src/shape.cpp
+        ${KWIK_RVM_FLASH_DIR}/src/image.cpp
+        ${KWIK_RVM_FLASH_DIR}/src/text.cpp
+        ${KWIK_RVM_FLASH_DIR}/src/sound.cpp
+        ${KWIK_RVM_FLASH_DIR}/src/player.cpp
+        ${KWIK_RVM_FLASH_DIR}/src/action.cpp
     )
 endif()
 
@@ -50,6 +59,13 @@ if(KWIK_BACKEND STREQUAL "sdl2")
     endif()
 else()
     target_include_directories(kwik_runtime PRIVATE ${KWIK_THIRD_PARTY}/glad/include)
+    target_include_directories(kwik_runtime PRIVATE
+        ${KWIK_RVM_FLASH_DIR}/include
+        ${KWIK_RVM_FLASH_DIR}/include/rvm_flash
+        ${KWIK_RVM_FLASH_DIR}/third_party/minimp3
+    )
+    set_source_files_properties(${KWIK_RVM_FLASH_DIR}/src/image.cpp PROPERTIES
+        COMPILE_DEFINITIONS RVM_FLASH_NO_STB_IMAGE_IMPL)
     set(KWIK_WINDOW_LIBS glfw OpenGL::GL)
 endif()
 

@@ -825,6 +825,14 @@ GMLFN(video_pause);
 GMLFN(video_resume);
 GMLFN(video_seek_to);
 GMLFN(video_set_volume);
+
+// rvm_flash shit
+GMLFN(rvm_flash_load);
+GMLFN(rvm_flash_free);
+GMLFN(rvm_flash_update);
+GMLFN(rvm_flash_draw);
+GMLFN(rvm_flash_width);
+GMLFN(rvm_flash_height);
 }
 
 #define KWIK_OVERRIDE(gen_name, fn)                                                       \
