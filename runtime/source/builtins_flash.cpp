@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <cstring>
+#include <cstdint>
 
 namespace gml {
 
@@ -31,6 +33,7 @@ struct FlashInstance {
     GLuint fbo = 0, color_tex = 0, depth_stencil_rb = 0;
     int fb_w = 0, fb_h = 0;
     double frame_accum = 0.0;
+    std::vector<uint8_t> readback_scratch;
 };
 
 std::vector<std::unique_ptr<FlashInstance>> g_flash;
@@ -54,6 +57,8 @@ struct GLStateGuard {
     GLint prev_viewport[4] = {0, 0, 0, 0};
     GLint prev_blend_src = GL_SRC_ALPHA, prev_blend_dst = GL_ONE_MINUS_SRC_ALPHA;
     GLboolean prev_blend_enabled = GL_TRUE;
+    GLint prev_active_texture = GL_TEXTURE0;
+    GLint prev_tex0 = 0, prev_tex1 = 0;
 
     GLStateGuard() {
         glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
@@ -61,6 +66,12 @@ struct GLStateGuard {
         glGetIntegerv(GL_BLEND_SRC, &prev_blend_src);
         glGetIntegerv(GL_BLEND_DST, &prev_blend_dst);
         prev_blend_enabled = glIsEnabled(GL_BLEND);
+        glGetIntegerv(GL_ACTIVE_TEXTURE, &prev_active_texture);
+        glActiveTexture(GL_TEXTURE0);
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &prev_tex0);
+        glActiveTexture(GL_TEXTURE1);
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &prev_tex1);
+        glActiveTexture((GLenum)prev_active_texture);
     }
     ~GLStateGuard() {
         glUseProgram(0);
@@ -73,6 +84,11 @@ struct GLStateGuard {
         if (prev_blend_enabled) glEnable(GL_BLEND); else glDisable(GL_BLEND);
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prev_fbo);
         glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, (GLuint)prev_tex1);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, (GLuint)prev_tex0);
+        glActiveTexture((GLenum)prev_active_texture);
     }
 };
 
@@ -140,8 +156,11 @@ GMLFN(rvm_flash_update) {
     FlashInstance* f = argc > 0 ? flash_of(args[0]) : nullptr;
     if (!f) return Value();
 
+    double dt = A(args, argc, 1, -1);
+    if (dt < 0) dt = render_delta_time();
+
     double frame_dt = f->movie.frame_rate > 0 ? 1.0 / f->movie.frame_rate : 1.0 / 30.0;
-    f->frame_accum += render_delta_time();
+    f->frame_accum += dt;
     int guard = 8;
     while (f->frame_accum >= frame_dt && guard-- > 0) {
         f->player.tick();
@@ -153,14 +172,10 @@ GMLFN(rvm_flash_update) {
 GMLFN(rvm_flash_draw) {
     (void)self;
     FlashInstance* f = argc > 0 ? flash_of(args[0]) : nullptr;
-    if (!f) return Value();
+    if (!f || argc < 2) return Value();
 
-    double x = A(args, argc, 1);
-    double y = A(args, argc, 2);
-    double w = A(args, argc, 3, -1);
-    double h = A(args, argc, 4, -1);
-    if (w <= 0) w = f->fb_w;
-    if (h <= 0) h = f->fb_h;
+    void* dst = (void*)(uintptr_t)(double)args[1];
+    if (!dst) return Value();
 
     {
         GLStateGuard guard;
@@ -172,10 +187,19 @@ GMLFN(rvm_flash_draw) {
         glClearStencil(0);
         glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         f->renderer.draw_player(f->player);
+
+        size_t row_bytes = (size_t)f->fb_w * 4;
+        if (f->readback_scratch.size() != row_bytes * f->fb_h)
+            f->readback_scratch.resize(row_bytes * f->fb_h);
+        glReadPixels(0, 0, f->fb_w, f->fb_h, GL_RGBA, GL_UNSIGNED_BYTE, f->readback_scratch.data());
+
+        uint8_t* out = (uint8_t*)dst;
+        for (int y = 0; y < f->fb_h; ++y) {
+            memcpy(out + (size_t)y * row_bytes,
+                   f->readback_scratch.data() + (size_t)(f->fb_h - 1 - y) * row_bytes, row_bytes);
+        }
     }
 
-    render_draw_quad(f->color_tex, x, y, (double)f->fb_w, (double)f->fb_h, 0, 0, w / f->fb_w,
-                     h / f->fb_h, 0, 0.f, 1.f, 1.f, 0.f, 0xFFFFFF, render_get_alpha());
     return Value();
 }
 

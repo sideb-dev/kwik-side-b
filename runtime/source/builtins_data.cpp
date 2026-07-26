@@ -838,6 +838,11 @@ GMLFN(buffer_get_size) {
     Buffer* b = argc > 0 ? buf_of(args[0]) : nullptr;
     return Value(b ? (double)b->data.size() : 0.0);
 }
+GMLFN(buffer_get_address) {
+    (void)self;
+    Buffer* b = argc > 0 ? buf_of(args[0]) : nullptr;
+    return Value(b ? (double)(uintptr_t)b->data.data() : 0.0);
+}
 GMLFN(buffer_load) {
     (void)self;
     std::FILE* f = std::fopen(kwik_resolve_read(S(args, argc, 0)).c_str(), "rb");

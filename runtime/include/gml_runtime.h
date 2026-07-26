@@ -395,7 +395,8 @@ GMLFN(file_text_open_write); GMLFN(file_text_close); GMLFN(file_text_eof);
 GMLFN(file_text_read_real); GMLFN(file_text_read_string); GMLFN(file_text_readln);
 GMLFN(file_text_write_real); GMLFN(file_text_write_string); GMLFN(file_text_writeln);
 
-GMLFN(buffer_create); GMLFN(buffer_delete); GMLFN(buffer_get_size); GMLFN(buffer_load);
+GMLFN(buffer_create); GMLFN(buffer_delete); GMLFN(buffer_get_size); GMLFN(buffer_get_address);
+GMLFN(buffer_load);
 GMLFN(buffer_load_async); GMLFN(buffer_read); GMLFN(buffer_write); GMLFN(buffer_save_async);
 GMLFN(buffer_async_group_begin); GMLFN(buffer_async_group_end); GMLFN(buffer_async_group_option);
 
