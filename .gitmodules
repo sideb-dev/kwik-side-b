@@ -1,0 +1,3 @@
+[submodule "third_party/rvm_flash"]
+	path = third_party/rvm_flash
+	url = https://github.com/st4rxtw/rvm_flash
